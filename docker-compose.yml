@@ -1,0 +1,7 @@
+services:
+  cloudflare-updater:
+    build: .
+    volumes:
+      - .:/app:ro
+    restart: unless-stopped
+    container_name: cloudflare-ip-updater
