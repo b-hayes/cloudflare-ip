@@ -26,9 +26,28 @@ The regular env file will be loaded before the site-specific one.
 ./update-cloudflare-ip.sh api.example.com.env
 ```
 
+There is also a script for iterating over all env files and running the command for each one for you.
+```bash
+./run-all-updates.sh
+```
+
 ## Automation
 
-Add to crontab for automatic updates:
+**Docker (recommended):**
 ```bash
-*/5 * * * * /path/to/update-cloudflare-ip.sh
+docker compose up -d
+```
+
+Runs `./run-all-updates.sh` hourly to keep all your websites up to date.
+
+**Manual cron:**
+If you dont have or want to use docker, you can schedule the script manually.
+
+```bash
+crontab -e
+```
+
+And then add this line:
+```text
+0 * * * * /path/to/run-all-updates.sh
 ```
