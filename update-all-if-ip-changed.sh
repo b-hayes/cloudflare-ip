@@ -19,8 +19,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo "$(date): Starting Cloudflare DNS updates..."
-
 cd /app
 
 # Get public IP once
@@ -32,46 +30,67 @@ fi
 echo "Current public IP: $CURRENT_IP"
 
 # Check if IP has changed since last successful update
-LAST_IP_FILE=".last_successful_ip"
+LAST_IP_FILE=".last_update_ip"
+FAILED_SITES_FILE=".failed_sites"
+RETRY_FAILED_ONLY=false
+
 if [[ -f "$LAST_IP_FILE" && "$FORCE_UPDATE" == false ]]; then
     LAST_IP=$(cat "$LAST_IP_FILE" 2>/dev/null || echo "")
     if [[ "$CURRENT_IP" == "$LAST_IP" ]]; then
-        echo "No updates required, IP address has not changed since last update."
-        exit 0
+        if [[ -f "$FAILED_SITES_FILE" ]]; then
+            echo "IP unchanged but retrying failed sites from previous run."
+            RETRY_FAILED_ONLY=true
+        else
+            echo "Last IP: $LAST_IP is the same skipping update."
+            exit 0
+        fi
+    else
+        echo "IP has changed from $LAST_IP to $CURRENT_IP"
     fi
-    echo "IP changed from $LAST_IP to $CURRENT_IP, proceeding with updates..."
 fi
 
-# Track if all updates succeed
-ALL_UPDATES_SUCCESSFUL=true
+echo "☁️  $(date) Starting Cloudflare DNS updates..."
 
-# Find all .env files that don't end with .example
-for env_file in *.env; do
-    if [[ -f "$env_file" && "$env_file" != *.example ]]; then
-        echo "Processing $env_file"
+# Track failed sites
+FAILED_SITES=()
+
+# Determine which files to process
+if [[ "$RETRY_FAILED_ONLY" == true ]]; then
+    mapfile -t ENV_FILES < "$FAILED_SITES_FILE"
+else
+    ENV_FILES=(*.env)
+fi
+
+# Process .env files
+for env_file in "${ENV_FILES[@]}"; do
+    if [[ -f "$env_file" ]]; then
+        # Skip base .env if there are multiple .env files there will likely be one for each site.
+        if [[ "$env_file" == ".env" && ${#ENV_FILES[@]} -gt 1 && "$RETRY_FAILED_ONLY" == false ]]; then
+            continue
+        fi
+
         if [[ "$env_file" == ".env" ]]; then
             # For the base .env file, run without env file parameter
             if ! ./update-cloudflare-ip.sh --ip="$CURRENT_IP"; then
-                ALL_UPDATES_SUCCESSFUL=false
-                echo "Failed to update $env_file"
+                FAILED_SITES+=("$env_file")
             fi
         else
             # For site-specific files, pass the filename and IP
             if ! ./update-cloudflare-ip.sh "$env_file" --ip="$CURRENT_IP"; then
-                ALL_UPDATES_SUCCESSFUL=false
-                echo "Failed to update $env_file"
+                FAILED_SITES+=("$env_file")
             fi
         fi
-        echo "Completed $env_file"
-        echo "---"
     fi
 done
 
-# Only save the IP if all updates were successful
-if [[ "$ALL_UPDATES_SUCCESSFUL" == true ]]; then
+# Save IP and manage failed sites list
+if [[ ${#FAILED_SITES[@]} -eq 0 ]]; then
     echo "$CURRENT_IP" > "$LAST_IP_FILE"
-    echo "All updates completed successfully. IP $CURRENT_IP recorded for future reference."
+    rm -f .failed_sites 2>/dev/null
+    echo "All updates completed successfully. IP $CURRENT_IP recorded."
 else
-    echo "Some updates failed. IP not recorded to ensure retry on next run."
+    echo "$CURRENT_IP" > "$LAST_IP_FILE"
+    printf '%s\n' "${FAILED_SITES[@]}" > .failed_sites
+    echo "Updates completed with ${#FAILED_SITES[@]} failures. Failed sites saved for retry."
     exit 1
 fi
