@@ -13,8 +13,18 @@ CRON_SCHEDULE=$(grep "update-all-if-ip-changed.sh" /etc/crontabs/root | awk '{pr
 CRON_MINUTE=$(echo $CRON_SCHEDULE | awk '{print $1}')
 CRON_HOUR=$(echo $CRON_SCHEDULE | awk '{print $2}')
 
-# Calculate seconds until next scheduled run
-if [ "$CRON_HOUR" = "*" ]; then
+# Handle */N minute syntax
+if [[ "$CRON_MINUTE" == */[0-9]* ]]; then
+    INTERVAL=${CRON_MINUTE#*/}
+    # Calculate next run based on interval
+    NEXT_RUN_MINUTE=$(( (CURRENT_MINUTE / INTERVAL + 1) * INTERVAL ))
+    if [ $NEXT_RUN_MINUTE -ge 60 ]; then
+        NEXT_RUN_MINUTE=$((NEXT_RUN_MINUTE - 60))
+        SECONDS_UNTIL_NEXT=$(( (60 - CURRENT_MINUTE + NEXT_RUN_MINUTE) * 60 - CURRENT_SECOND ))
+    else
+        SECONDS_UNTIL_NEXT=$(( (NEXT_RUN_MINUTE - CURRENT_MINUTE) * 60 - CURRENT_SECOND ))
+    fi
+elif [ "$CRON_HOUR" = "*" ]; then
     # Runs every hour at specified minute
     if [ $CURRENT_MINUTE -lt $CRON_MINUTE ]; then
         # Next run is this hour
@@ -50,6 +60,4 @@ else
     TIME_REMAINING="${SECONDS}s"
 fi
 
-LAST_IP=$([ -f .last_successful_ip ] && cat .last_successful_ip || echo 'none')
-
-echo "Heartbeat: Next IP check in ${TIME_REMAINING} - Last IP: ${LAST_IP}"
+echo "Heartbeat: Next IP check in ${TIME_REMAINING}"

@@ -2,6 +2,6 @@
 *env*
 *.env*
 .env*
-/.last_successful_ip
 /updates.log
 /.last_update_ip
+/.failed_sites
