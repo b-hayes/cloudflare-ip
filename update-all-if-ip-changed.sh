@@ -27,7 +27,7 @@ if ! CURRENT_IP=$(./get-public-ip.sh 2>&1); then
     echo "$CURRENT_IP"
     exit 1
 fi
-echo "Current public IP: $CURRENT_IP"
+echo "$(date) IP CHECK: Current public IP is $CURRENT_IP"
 
 # Check if IP has changed since last successful update
 LAST_IP_FILE=".last_update_ip"
@@ -41,15 +41,17 @@ if [[ -f "$LAST_IP_FILE" && "$FORCE_UPDATE" == false ]]; then
             echo "IP unchanged but retrying failed sites from previous run."
             RETRY_FAILED_ONLY=true
         else
-            echo "Last IP: $LAST_IP is the same skipping update."
+            echo "IP has not changed skipping update."
             exit 0
         fi
     else
         echo "IP has changed from $LAST_IP to $CURRENT_IP"
     fi
+else
+  echo "No previous IP recorded"
 fi
 
-echo "☁️  $(date) Starting Cloudflare DNS updates..."
+echo "☁️  Starting Cloudflare DNS updates..."
 
 # Track failed sites
 FAILED_SITES=()
