@@ -8,7 +8,8 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Setup cron to run every hour
-RUN echo "0 * * * * /app/update-all-if-ip-changed.sh 2>&1 | tee -a /app/updates.log" > /etc/crontabs/root
+# Setup cron jobs
+RUN echo "0 * * * * /app/update-all-if-ip-changed.sh > /proc/1/fd/1 2>&1 | tee -a /app/updates.log" > /etc/crontabs/root && \
+    echo "* * * * * /app/heartbeat.sh > /proc/1/fd/1 2>&1" >> /etc/crontabs/root
 
 CMD ["./start.sh"]

@@ -4,8 +4,9 @@ set -e
 
 cd /app
 
-# Start heartbeat in background
-./heartbeat.sh &
+echo "$(date): Cloudflare DNS updater has started."
+echo "$(date): Cron schedule:"
+cat /etc/crontabs/root
 
 # Start cron in foreground
-crond -f
+exec crond -f
