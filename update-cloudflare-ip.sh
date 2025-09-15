@@ -8,9 +8,34 @@ if [ -f ".env" ]; then
     source ".env"
 fi
 
+# Parse arguments
+SITE_ENV_FILE=""
+PROVIDED_IP=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --ip)
+            PROVIDED_IP="$2"
+            shift 2
+            ;;
+        --ip=*)
+            PROVIDED_IP="${1#*=}"
+            shift
+            ;;
+        *.env)
+            SITE_ENV_FILE="$1"
+            shift
+            ;;
+        *)
+            # Assume it's a site env file for backward compatibility
+            SITE_ENV_FILE="$1"
+            shift
+            ;;
+    esac
+done
+
 # Load site-specific variables if provided (can override shared ones)
-if [ $# -eq 1 ]; then
-    SITE_ENV_FILE="$1"
+if [ -n "$SITE_ENV_FILE" ]; then
     if [ -f "$SITE_ENV_FILE" ]; then
         echo "Loading site-specific environment variables from $SITE_ENV_FILE"
         source "$SITE_ENV_FILE"
@@ -47,19 +72,18 @@ CLOUDFLARE_RECORD_TYPE="${CLOUDFLARE_RECORD_TYPE:-A}"
 CLOUDFLARE_TTL="${CLOUDFLARE_TTL:-300}"
 
 # Get current public IP
-echo "Getting current public IP address..."
-if ! CURRENT_IP=$(curl -s https://ipv4.icanhazip.com 2>&1); then
-    echo "Error: Failed to fetch public IP address:"
-    echo "$CURRENT_IP"
-    exit 1
+if [ -n "$PROVIDED_IP" ]; then
+    CURRENT_IP="$PROVIDED_IP"
+    echo "Using provided IP: $CURRENT_IP"
+else
+    echo "Getting current public IP address..."
+    if ! CURRENT_IP=$(./get-public-ip.sh 2>&1); then
+        echo "Error: Failed to fetch public IP address:"
+        echo "$CURRENT_IP"
+        exit 1
+    fi
+    echo "Current public IP: $CURRENT_IP"
 fi
-
-if [ -z "$CURRENT_IP" ]; then
-    echo "Error: Received empty response when fetching public IP address"
-    exit 1
-fi
-
-echo "Current public IP: $CURRENT_IP"
 
 # Get existing DNS record
 echo "Checking existing DNS record for $CLOUDFLARE_RECORD_NAME..."

@@ -28,8 +28,14 @@ The regular env file will be loaded before the site-specific one.
 
 There is also a script for iterating over all env files and running the command for each one for you.
 ```bash
-./run-all-updates.sh
+./update-all-if-ip-changed.sh
 ```
+
+**Smart IP change detection:**
+- Only updates DNS records if your public IP has changed since the last successful update
+- Saves your current IP after successful updates in `.last_successful_ip`
+- Exits early with no API calls if IP unchanged, making it efficient for frequent runs
+- Use `--force` or `-f` to update anyway (ignores IP change check)
 
 ## Automation
 
@@ -38,7 +44,7 @@ There is also a script for iterating over all env files and running the command 
 docker compose up -d
 ```
 
-Runs `./run-all-updates.sh` hourly to keep all your websites up to date.
+Runs `./update-all-if-ip-changed.sh` hourly to keep all your websites up to date.
 
 **Manual cron:**
 If you dont have or want to use docker, you can schedule the script manually.
@@ -49,5 +55,5 @@ crontab -e
 
 And then add this line:
 ```text
-0 * * * * /path/to/run-all-updates.sh
+0 * * * * /path/to/update-all-if-ip-changed.sh
 ```
