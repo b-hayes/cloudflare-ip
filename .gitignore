@@ -5,3 +5,6 @@
 /updates.log
 /.last_update_ip
 /.failed_sites
+
+# IDE files
+.idea/
