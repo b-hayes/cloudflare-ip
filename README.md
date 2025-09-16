@@ -44,7 +44,7 @@ There is also a script for iterating over all env files and running the command 
 docker compose up -d
 ```
 
-Runs `./update-all-if-ip-changed.sh` hourly to keep all your websites up to date.
+Runs `./update-all-if-ip-changed.sh` every 15 minutes but only updates DNS records when your IP has actually changed.
 
 **Manual cron:**
 If you dont have or want to use docker, you can schedule the script manually.
