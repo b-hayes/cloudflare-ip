@@ -19,7 +19,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-cd /app
+# In the container the scripts live in /app; running locally they're in the current dir
+[ -x ./get-public-ip.sh ] || cd /app
 
 # Get public IP once
 if ! CURRENT_IP=$(./get-public-ip.sh 2>&1); then
