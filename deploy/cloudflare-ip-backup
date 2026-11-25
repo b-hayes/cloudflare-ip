@@ -1,0 +1,5 @@
+# Daily backup of the Cloudflare IP updater (its gitignored env files) to /array/backup.
+# Runs as the host user (backup.sh needs no root: the env files are owned by the host user,
+# the container is stopped/started via docker, writes to the user-writable /array/backup).
+# Install: sed "s/__USER__/$USER/" deploy/cloudflare-ip-backup | sudo tee /etc/cron.d/cloudflare-ip-backup
+19 2 * * * __USER__ $HOME/repo/cloudflare-ip/bin/backup.sh >> $HOME/repo/cloudflare-ip/backup.log 2>&1

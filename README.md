@@ -74,3 +74,9 @@ And then add this line:
 ```text
 0 * * * * /path/to/update-all-if-ip-changed.sh
 ```
+
+## Backups
+
+- `bin/backup.sh` - stops the container briefly and copies the gitignored env files (`.env` and every `<site>.env`) to `/array/backup/cloudflare-ip-<datetime>`, keeps 7.
+- `bin/restore.sh <backup-dir>` - isolated restore test (default, live instance untouched; checks each site's credentials can read its DNS record, read-only); `--into-live` for disaster recovery.
+- Cron: `sed "s/__USER__/$USER/" deploy/cloudflare-ip-backup | sudo tee /etc/cron.d/cloudflare-ip-backup`
